@@ -1,10 +1,8 @@
 ---
-title: "06_knitting_ATAC_analyses"
-author: "[Caleb Maddry](https://github.com/cmaddry), Kienan Higgins"
-date: "2025-04-15"
+title: "Final Project"
+author: Caleb Maddry
+date: March 22, 2005
 output: md_document
-editor_options: 
-  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
