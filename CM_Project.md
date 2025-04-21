@@ -1,13 +1,15 @@
 ##### (a) Loading in ATACseq peak files with custom function import\_peaks (list of GRanges output)
 
-    # establishing peak path to the dir with MACS2 output peak files from NF_CORE ATACseq pipeline
-    #peak_path <- "<your_atac_pipeline_output_dir>/bwa/merged_library/macs2/broad_peak"
-    peak_path <- "/scratch/Shares/rinnclass/MASTER_CLASS/lessons/08_ATACseq_pipeline/00_run_pipeline/00_pipeline_run/pipeline_run/bwa/merged_library/macs2/broad_peak"
+``` r
+# establishing peak path to the dir with MACS2 output peak files from NF_CORE ATACseq pipeline
+#peak_path <- "<your_atac_pipeline_output_dir>/bwa/merged_library/macs2/broad_peak"
+peak_path <- "/scratch/Shares/rinnclass/MASTER_CLASS/lessons/08_ATACseq_pipeline/00_run_pipeline/00_pipeline_run/pipeline_run/bwa/merged_library/macs2/broad_peak"
 
-    # creating a file list also needed for import_peaks function to get sample name associated with file
-    fl <- list.files(peak_path, full.names = TRUE, pattern = ".broadPeak")
+# creating a file list also needed for import_peaks function to get sample name associated with file
+fl <- list.files(peak_path, full.names = TRUE, pattern = ".broadPeak")
 
 
-    print("here are the number of peaks for each sample")
+print("here are the number of peaks for each sample")
+```
 
     ## [1] "here are the number of peaks for each sample"
