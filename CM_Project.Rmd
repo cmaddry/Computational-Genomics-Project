@@ -407,8 +407,221 @@ human_combined_sig <- bind_rows(human_common_sig_lncrna, human_common_sig, human
 
 MS_combined_sig <- bind_rows(MS_common_sig_lncrna, MS_common_sig, MS_common_sig_PCG) %>%
   distinct()
-
-save(human_combined_sig, MS_combined_sig, file = "/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/RESULTS/MOUSEVSHUMAN/ML/combined_sig.RData")
 ```
+
+# Visualizing the data
+```{r plotting tpm}
+# Load TPM data for mouse
+tpm_MS <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/MOUSE/salmon.merged.gene_tpm.tsv", header=TRUE, row.names=1)
+
+# Load TPM data for human
+tpm_human <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/HUMAN/salmon.merged.gene_tpm.tsv", header=TRUE, row.names=1)
+tpm_human <- tpm_human %>%
+  dplyr::select(gene_name, gfp_0_1, gfp_0_2, gfp_0_3, gfp_12_1, gfp_12_2, gfp_12_3, gfp_24_1, gfp_24_2, gfp_24_3, gfp_48_1, gfp_48_2, gfp_48_3, gfp_96_1, gfp_96_2, gfp_96_3)
+
+# Filter the TPM data for genes in MS/human_combined_sig
+filtered_tpm_MS <- tpm_MS[tpm_MS$gene_name %in% MS_combined_sig$gene_name, ]
+filtered_tpm_human <- tpm_human[tpm_human$gene_name %in% human_combined_sig$gene_name, ]
+
+# Reshape mouse TPM data to long format
+filtered_tpm_MS_long <- filtered_tpm_MS %>%
+  pivot_longer(
+    cols = starts_with("WT"),
+    names_to = c("time_point", "replicate"),
+    names_pattern = "^WT_(\\d+)_(\\d+)$",
+    values_to = "tpm"
+  ) %>%
+  mutate(
+    time_point = as.numeric(time_point),
+    replicate = as.numeric(replicate),
+    condition = "mouse"  # Add a column to label as mouse
+  )
+
+# Reshape human TPM data to long format
+filtered_tpm_human_long <- filtered_tpm_human %>%
+  pivot_longer(
+    cols = starts_with("gfp"),
+    names_to = c("time_point", "replicate"),
+    names_pattern = "^gfp_(\\d+)_(\\d+)$",
+    values_to = "tpm"
+  ) %>%
+  mutate(
+    time_point = as.numeric(time_point),
+    replicate = as.numeric(replicate),
+    condition = "human"  # Add a column to label as human
+  )
+
+# Combine human and mouse data into one data frame
+tpm_combined_long <- bind_rows(filtered_tpm_MS_long, filtered_tpm_human_long)
+
+# Calculate mean and standard error (SE) for TPM at each time point and condition
+tpm_mean_combined <- tpm_combined_long %>%
+  group_by(gene_name, time_point, condition) %>%
+  summarise(
+    mean_tpm = mean(tpm, na.rm = TRUE),
+    se_tpm = sd(tpm, na.rm = TRUE) / sqrt(n()),  # Standard error
+    .groups = 'drop'
+  )
+
+# Plot the combined TPM values for human and mouse with error bars
+ggplot(tpm_mean_combined, aes(x = time_point, y = mean_tpm)) +
+  geom_line(aes(color = condition, linetype = condition), alpha = 0.7) +  # Line colored by condition
+  geom_point(aes(color = condition), alpha = 0.5) +  # Points for each mean TPM value
+  geom_errorbar(
+    aes(ymin = mean_tpm - se_tpm, ymax = mean_tpm + se_tpm, color = condition),
+    width = 0.2, # Adjust the width of the error bars
+    alpha = 0.7
+  ) +
+  facet_wrap(~ gene_name, scales = "free_y") +  # Separate plots for each gene
+  labs(
+    x = "Time Point (h)", 
+    y = "Mean TPM", 
+    color = "Condition"
+  ) +
+  theme_minimal() +  # Minimal theme
+  scale_color_manual(values = c("human" = "darkred", "mouse" = "blue")) +  # Manual color scale
+  scale_linetype_manual(values = c("human" = "solid", "mouse" = "dashed")) + 
+  scale_x_continuous(breaks = unique(tpm_mean_combined$time_point)) +  # Set x-axis breaks
+  theme(
+    aspect.ratio = 0.6,  # Aspect ratio of 3:2 
+    strip.text = element_text(size = 12),  # Adjust facet labels font size if necessary
+  )
+```
+
+## Plotting figures
+```{r plotting log2FC}
+# Prepare mouse data with source and timepoint column
+MS_combined_sig <- MS_combined_sig %>%
+  mutate(source = "mouse") %>%
+  mutate(timepoint = as.numeric(sub("time_([0-9]+)_vs_0", "\\1", result_name)))
+# Add a 0 time_point for mouse data
+MS_combined_sig_zero <- MS_combined_sig %>%
+  dplyr::select(gene_id, gene_name, baseMean) %>%
+  distinct() %>%
+  mutate(log2FoldChange = 0,
+         timepoint = 0,
+         source = "mouse")
+
+MS_combined_sig <- MS_combined_sig %>%
+  bind_rows(MS_combined_sig_zero)
+
+
+# Prepare human data with source and timepoint column
+human_combined_sig <- human_combined_sig %>%
+  mutate(source = "human") %>%
+  mutate(timepoint = as.numeric(sub("time_([0-9]+)_vs_0", "\\1", result_name)))
+# Add a 0 time_point for human data
+human_combined_sig_zero <- human_combined_sig %>%
+  dplyr::select(gene_id, gene_name, baseMean) %>%
+  distinct() %>%
+  mutate(log2FoldChange = 0,
+         timepoint = 0,
+         source = "human")
+
+human_combined_sig <- human_combined_sig %>%
+  bind_rows(human_combined_sig_zero)
+
+# Combine human and mouse data
+combined_data <- bind_rows(MS_combined_sig, human_combined_sig)
+
+# Generate the plot
+ggplot(combined_data, aes(x = timepoint, y = log2FoldChange, group = interaction(gene_id, source), color = source)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(alpha = 0.7, aes(linetype = source)) +
+  geom_point(alpha = 0.8) +
+  facet_wrap(~gene_name, scales = "free_y") +
+  scale_color_manual(values = c("human" = "darkred", "mouse" = "blue")) +
+  scale_linetype_manual(values = c("human" = "solid", "mouse" = "dashed")) + 
+  scale_x_continuous(breaks = c(0, 12, 24, 48, 96), labels = c("0", "12", "24", "48", "96")) +
+  theme_minimal() +
+  labs(title = "Gene LFC Trends for human and mouse",
+       x = "Timepoint (hours)",
+       y = "Log2 Fold Change",
+       color = "Source",
+       linetype = "Source") +
+   theme(
+    aspect.ratio = 0.6,  # Aspect ratio of 3:2 
+    strip.text = element_text(size = 12),  # Adjust facet labels font size if necessary
+  )
+
+```
+
+## Plotting counts
+```{r plotting counts}
+#Load counts data for mouse
+MS_counts <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/MOUSE/salmon.merged.gene_counts.tsv", header=TRUE, row.names=1)
+#Load counts data for human
+human_counts <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/HUMAN/salmon.merged.gene_counts.tsv", header=TRUE, row.names=1)
+human_counts <- human_counts %>%
+  dplyr::select(gene_name, gfp_0_1, gfp_0_2, gfp_0_3, gfp_12_1, gfp_12_2, gfp_12_3, gfp_24_1, gfp_24_2, gfp_24_3, gfp_48_1, gfp_48_2, gfp_48_3, gfp_96_1, gfp_96_2, gfp_96_3)
+
+# Filter the counts data for genes in MS/human_combined_sig
+MS_counts_filtered <- MS_counts[MS_counts$gene_name %in% MS_combined_sig$gene_name, ]
+human_counts_filtered <- human_counts[human_counts$gene_name %in% human_combined_sig$gene_name, ]
+
+# Reshape mouse counts data to long format
+MS_counts_filtered_long <- MS_counts_filtered %>%
+  pivot_longer(
+    cols = starts_with("WT"),
+    names_to = c("time_point", "replicate"),
+    names_pattern = "^WT_(\\d+)_(\\d+)$",
+    values_to = "counts"
+  ) %>%
+  mutate(
+    time_point = as.numeric(time_point),
+    replicate = as.numeric(replicate),
+    condition = "mouse"  # Add a column to label as mouse
+  )
+
+# Reshape human counts data to long format
+human_counts_filtered_long <- human_counts_filtered %>%
+  pivot_longer(
+    cols = starts_with("gfp"),
+    names_to = c("time_point", "replicate"),
+    names_pattern = "^gfp_(\\d+)_(\\d+)$",
+    values_to = "counts"
+  ) %>%
+  mutate(
+    time_point = as.numeric(time_point),
+    replicate = as.numeric(replicate),
+    condition = "human"  # Add a column to label as human
+  )
+
+# Combine LINC00667 and GFP data into one data frame
+counts_combined_long <- bind_rows(MS_counts_filtered_long, human_counts_filtered_long)
+
+# Calculate mean and standard error (SE) for counts at each time point and condition
+counts_mean_combined <- counts_combined_long %>%
+  group_by(gene_name, time_point, condition) %>%
+  summarise(
+    mean_counts = mean(counts, na.rm = TRUE),
+    se_counts = sd(counts, na.rm = TRUE) / sqrt(n()),  # Standard error
+    .groups = 'drop'
+  )
+
+# Plot the combined counts values for LINC00667 and GFP with error bars
+ggplot(counts_mean_combined, aes(x = time_point, y = mean_counts, group = interaction(gene_name, condition))) +
+  geom_line(aes(color = condition), alpha = 0.7) +  # Line colored by condition
+  geom_point(aes(color = condition), alpha = 0.5) +  # Points for each mean counts value
+  geom_errorbar(
+    aes(ymin = mean_counts - se_counts, ymax = mean_counts + se_counts, color = condition),
+    width = 0.2, # Adjust the width of the error bars
+    alpha = 0.7
+  ) +
+  facet_wrap(~ gene_name, scales = "free_y") +  # Separate plots for each gene
+  labs(
+    x = "Time Point (h)", 
+    y = "Mean counts", 
+    color = "Condition"
+  ) +
+  theme_minimal() +  # Minimal theme
+  scale_color_manual(values = c("human" = "darkred", "mouse" = "blue")) +
+  scale_linetype_manual(values = c("human" = "solid", "mouse" = "dashed")) +# Manual color scale
+  scale_x_continuous(breaks = unique(counts_mean_combined$time_point))  # Set x-axis breaks
+```
+
+
+
+
 
 
