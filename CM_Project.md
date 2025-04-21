@@ -1,10 +1,13 @@
-#### Objective: To determine if chromatin accessibility changes due to dox exposure.
+##### (a) Loading in ATACseq peak files with custom function import\_peaks (list of GRanges output)
 
-We have performed a time course series of experiements measuring
-chromating accessibility (ATACseq peaks)upon exposure to dox. These are
-0, 30, 60, 90, 120, 150 minutes. Each time point has a replicate. The
-fastq sequencing files were processed by the NF\_CORE ATACseq pipeline
-v- 2.12 (<https://nf-co.re/atacseq/2.1.2/>).
+    # establishing peak path to the dir with MACS2 output peak files from NF_CORE ATACseq pipeline
+    #peak_path <- "<your_atac_pipeline_output_dir>/bwa/merged_library/macs2/broad_peak"
+    peak_path <- "/scratch/Shares/rinnclass/MASTER_CLASS/lessons/08_ATACseq_pipeline/00_run_pipeline/00_pipeline_run/pipeline_run/bwa/merged_library/macs2/broad_peak"
 
-We will be using the MACS2 output files from the NF\_CORE Pipeline For
-example: -broad.peak -consensus.broad.peak
+    # creating a file list also needed for import_peaks function to get sample name associated with file
+    fl <- list.files(peak_path, full.names = TRUE, pattern = ".broadPeak")
+
+
+    print("here are the number of peaks for each sample")
+
+    ## [1] "here are the number of peaks for each sample"

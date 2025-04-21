@@ -34,66 +34,7 @@ peak_path <- "/scratch/Shares/rinnclass/MASTER_CLASS/lessons/08_ATACseq_pipeline
 # creating a file list also needed for import_peaks function to get sample name associated with file
 fl <- list.files(peak_path, full.names = TRUE, pattern = ".broadPeak")
 
-# running import_peaks
-my_peaks <- import_peaks(consensus_file_path = peak_path)
 
 print("here are the number of peaks for each sample")
-print(num_peaks <- sapply(my_peaks, length) %>% as.data.frame)
 
-```t
-##### Result - there are roughly 70-100K peaks in a given sample
-
-##### (b) finding number of peaks common in all samples using find_common_peaks custom funciton
-Here I am asking how many peaks are called in all the time points measured. These are an interesting
-set of genomic locations as these chromatin accessibility sites persist across all samples. 
-```{r finding common peaks in all samples, dependson="previous_chunk"}
-# run find_common_peaks function 
-common_peaks <-  suppressWarnings(find_common_peaks(my_peaks))
-
-```
-Here are the number of peaks that overlap in all samples: `r length(common_peaks)`
-
-![example of peak called by find_common_peaks in all samples.](results/common_peak_example.jpg)
-##### The figure shows that our common peak call looks good. Peaks appear in all conditions.
-##### Result 37,152 peaks are common in all samples - visual inspection in IGV looks good (see below)
-
-
-##### (c) Peaks that are unique to dox and non-dox conditions
-Using find_common_overlaps peaks that are specific to dox or non-dox
-will be identified.
-
-Non-dox samples
-```{r non-dox atac peaks, dependson="previous_chunk"}
-
-# common peaks in non-dox (0 time point)
-non_dox_samples <- my_peaks[c("KO_control_0", "WT_control_0")]
-non_dox_common_peaks <- find_common_peaks(non_dox_samples)
-print(c("This is how many peaks are common in non-dox:", length(non_dox_common_peaks)))
-```
-
-Dox samples
-```{r dox samples, dependson="previous_chunk"}
-# common peaks in dox time points (!not time 0)
-dox_samples <- names(my_peaks)[!grepl("_0$", names(my_peaks))]
-dox_peaks <- my_peaks[dox_samples]
-dox_common_peaks <- suppressWarnings(find_common_peaks(dox_peaks))
-print(c("This is how many peaks are common in dox",length(dox_common_peaks)))
-```
-
-Overlap of dox and non-dox (to get unique to each condition)
-```{r dox vs non-dox atac peaks, dependson="previous_chunk"}
-# Now overlap between dox and non-dox common peaks
-dox_compare_list <- list(non_dox = non_dox_common_peaks, dox = dox_common_peaks)
-dox_non_dox_ov <- suppressWarnings(find_common_peaks(dox_compare_list))
-print(c("This is how many peaks are common in both non- and dox treatments", length(dox_non_dox_ov)))
-
-# extracting peaks unique to each condition (dox non-dox)
-# Peaks unique to non_dox
-unique_to_non_dox <-suppressWarnings(find_my_peaks(dox_non_dox_ov, non_dox_common_peaks))
-print(c("This is how many peaks are unique to non-dox condition",length(unique_to_non_dox)))
-
-# Peaks unique to dox
-unique_to_dox <- suppressWarnings(find_my_peaks(dox_non_dox_ov, dox_common_peaks))
-
-print(c("This is how many peaks are unique to dox condition", length(unique_to_dox)))
 ```
