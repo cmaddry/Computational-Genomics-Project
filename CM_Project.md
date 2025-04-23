@@ -731,3 +731,130 @@ ggplot(counts_mean_combined, aes(x = time_point, y = mean_counts, group = intera
     ## data's linetype values.
 
 ![](CM_Project_files/figure-markdown_strict/plotting%20counts-1.png)
+
+# Time analysis of RNASeq Data
+
+I want to look into how Doxycycline effects both human and mouse stem
+cells throughout the duration of the experiment. There are a few methods
+to accomplish this. [Oh et
+al. (2021)](https://doi.org/10.3390/genes12030352) presents some of
+these time analysis methods.
+
+## Fourier Analysis
+
+One of the most famous methods for analyzing the periodicity of time
+series data is the Fourier transform. This method transforms time series
+data into frequency space so that we can determine which frequency a
+signal might be oscillating with. In our context, this would tell us if
+doxycycline’s effects display periodic behavior over the duration of the
+experiment.
+
+Unfortunately, this analysis technique is not valid with our data. For
+the Fourier transform to work, the data has to be sampled at evenly
+spaced intervals. Our data was sampled at 12, 24, 48, and 96 hours.
+Thankfully, a method to detect peridic signals for unevenly spaced
+samples exists. This method is called the Lomb-Scargle Periodogram.
+
+## Lomb-Scargle Periodogram
+
+The Lomb-Scargle Periodogram is a temporal-analysis method that can be
+used to estimate periodicity of unevenly spaced data. The method is
+closely related to Fourier analysis and it is commonly known as
+least-squares spectral analysis (LSSA).
+
+The RNA-seq data is unevenly spaced which makes the Lomb-Scargle
+Periodgram a great candidate for our analysis. A major drawback with
+this technique come from
+
+### Applying Lomb-Scargle to our counts data
+
+``` finding
+
+# We will be using the Lomb-Scargle Periodogram instead of a Fourier Transform because the data is unevenly spaced
+?lomb
+  
+  
+# The frequency at which that data was taken (in hrs)
+time_points = c(12, 24, 48, 96)
+
+# Group by gene and condition
+grouped_data <- counts_mean_combined %>%
+  group_by(gene_name, condition) %>%
+  group_split()
+  
+# Apply Lomb-Scargle Periodogram
+results <- map(grouped_data, function(group) {
+  time <- group$time_point
+  counts <- group$mean_counts
+  
+  res <- lsp(x = counts, times = time, from = 1/96, to = 1/6, type = "frequency", ofac = 10, plot = FALSE)
+  
+  # Optional: Plot
+ # plot(res, main = paste(unique(group$gene_name), unique(group$condition)))
+  
+  return(res)
+})
+
+# 👇 This plots ONLY the last group's periodogram:
+plot(results[[length(results) - 20]], 
+     main = paste(unique(grouped_data[[length(results) - 20]]$gene_name), 
+                  unique(grouped_data[[length(results) - 20]]$condition)))
+```
+
+``` computation
+# Compute periodograms and store frequency, power, and labels
+periodogram_data <- map_dfr(grouped_data, function(group) {
+  time <- group$time_point
+  counts <- group$mean_counts
+  
+  res <- lsp(x = counts, times = time,
+             from = 1/100, to = 1,
+             type = "frequency", ofac = 10, plot = FALSE)
+  
+  tibble(
+    frequency = res$scanned,
+    power = res$power,
+    gene_name = unique(group$gene_name),
+    condition = unique(group$condition)
+  )
+})
+
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  labs(title = "Lomb-Scargle Periodograms", 
+       x = "Frequency (1/hour)", 
+       y = "Normalized Power") +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+``` computation
+# Compute periodograms and store frequency, power, and labels
+periodogram_data <- map_dfr(grouped_data, function(group) {
+  time <- group$time_point
+  counts <- group$mean_counts
+  
+  res <- lsp(x = counts, times = time,
+             from = 1, to = 96,
+             type = "period", ofac = 10, plot = FALSE)
+  
+  tibble(
+    frequency = res$scanned,
+    power = res$power,
+    gene_name = unique(group$gene_name),
+    condition = unique(group$condition)
+  )
+})
+
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  labs(title = "Lomb-Scargle Periodograms", 
+       x = "Period (hour)", 
+       y = "Normalized Power") +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
