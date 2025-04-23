@@ -768,8 +768,7 @@ this technique come from
 
 ### Applying Lomb-Scargle to our counts data
 
-``` finding
-
+``` r
 # We will be using the Lomb-Scargle Periodogram instead of a Fourier Transform because the data is unevenly spaced
 ?lomb
   
@@ -801,7 +800,9 @@ plot(results[[length(results) - 20]],
                   unique(grouped_data[[length(results) - 20]]$condition)))
 ```
 
-``` computation
+![](CM_Project_files/figure-markdown_strict/Finding%20the%20genes%20that%20are%20significant%20in%20both%20datasets,%20but%20also%20decreased%20less%20than%202x%20the%20initial%20starting%20point-1.png)![](CM_Project_files/figure-markdown_strict/Finding%20the%20genes%20that%20are%20significant%20in%20both%20datasets,%20but%20also%20decreased%20less%20than%202x%20the%20initial%20starting%20point-2.png)
+
+``` r
 # Compute periodograms and store frequency, power, and labels
 periodogram_data <- map_dfr(grouped_data, function(group) {
   time <- group$time_point
@@ -830,7 +831,9 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
-``` computation
+![](CM_Project_files/figure-markdown_strict/Computation%20across%20the%20frequency-1.png)
+
+``` r
 # Compute periodograms and store frequency, power, and labels
 periodogram_data <- map_dfr(grouped_data, function(group) {
   time <- group$time_point
@@ -858,3 +861,5 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme_minimal() +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
+
+![](CM_Project_files/figure-markdown_strict/Computation%20across%20the%20period-1.png)

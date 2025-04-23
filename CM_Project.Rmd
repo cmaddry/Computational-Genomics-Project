@@ -636,7 +636,7 @@ The RNA-seq data is unevenly spaced which makes the Lomb-Scargle Periodgram a gr
 
 
 ### Applying Lomb-Scargle to our counts data
-```{Finding the genes that are significant in both datasets, but also decreased less than 2x the initial starting point}
+```{r Finding the genes that are significant in both datasets, but also decreased less than 2x the initial starting point}
 
 # We will be using the Lomb-Scargle Periodogram instead of a Fourier Transform because the data is unevenly spaced
 ?lomb
@@ -671,7 +671,7 @@ plot(results[[length(results) - 20]],
 ```
 
 
-```{Computation across the frequency}
+```{r Computation across the frequency}
 # Compute periodograms and store frequency, power, and labels
 periodogram_data <- map_dfr(grouped_data, function(group) {
   time <- group$time_point
@@ -700,7 +700,7 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
-```{Computation across the period}
+```{r Computation across the period}
 # Compute periodograms and store frequency, power, and labels
 periodogram_data <- map_dfr(grouped_data, function(group) {
   time <- group$time_point
