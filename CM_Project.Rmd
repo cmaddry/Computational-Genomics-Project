@@ -928,4 +928,6 @@ ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
 ```
 
 ### Results
-The data results look a lot better with the extra data points. The noise at lower frequencies has significantly decreased and peaks later on are more prominant
+The data results look a lot better with the extra data points. The noise at lower frequencies has significantly decreased and peaks later on are seemingly more prominent. Some of the genes are clearly periodic in the dataset. [RP11-478C19.2](https://doi.org/10.1016/j.tranon.2022.101525), [SP5](https://www.sciencedirect.com/science/article/pii/S0006291X05027658), and [ADGRL4](https://pmc.ncbi.nlm.nih.gov/articles/PMC6626334/) are great examples of this behavior. 
+
+I would want to do this with more data points and see what it looks like after that. It would also be interesting to examine the genes in more depth and see if there is some kind of correlation between function and periodicity.
