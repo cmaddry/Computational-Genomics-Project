@@ -655,7 +655,7 @@ ggplot(combined_data, aes(x = timepoint, y = log2FoldChange, group = interaction
 ## Plotting counts
 
 ``` r
-#Load counts data for mouse
+#counts data for mouse
 MS_counts <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/MOUSE/salmon.merged.gene_counts.tsv", header=TRUE, row.names=1)
 #Load counts data for human
 human_counts <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/HUMAN/salmon.merged.gene_counts.tsv", header=TRUE, row.names=1)
@@ -771,77 +771,24 @@ this technique come from
 ``` r
 # We will be using the Lomb-Scargle Periodogram instead of a Fourier Transform because the data is unevenly spaced
 ?lomb
-  
-  
-# The frequency at which that data was taken (in hrs)
-time_points = c(12, 24, 48, 96)
+```
 
+#### First, we will calculate the Lomb-Scargle Periodogram using the TPM data
+
+``` r
 # Group by gene and condition
-grouped_data <- counts_mean_combined %>%
+grouped_data <- tpm_mean_combined %>%
   group_by(gene_name, condition) %>%
   group_split()
-  
-# Apply Lomb-Scargle Periodogram
-results <- map(grouped_data, function(group) {
-  time <- group$time_point
-  counts <- group$mean_counts
-  
-  res <- lsp(x = counts, times = time, from = 1/96, to = 1/6, type = "frequency", ofac = 10, plot = FALSE)
-  
-  # Optional: Plot
- # plot(res, main = paste(unique(group$gene_name), unique(group$condition)))
-  
-  return(res)
-})
 
-# 👇 This plots ONLY the last group's periodogram:
-plot(results[[length(results) - 20]], 
-     main = paste(unique(grouped_data[[length(results) - 20]]$gene_name), 
-                  unique(grouped_data[[length(results) - 20]]$condition)))
-```
-
-![](CM_Project_files/figure-markdown_strict/Finding%20the%20genes%20that%20are%20significant%20in%20both%20datasets,%20but%20also%20decreased%20less%20than%202x%20the%20initial%20starting%20point-1.png)![](CM_Project_files/figure-markdown_strict/Finding%20the%20genes%20that%20are%20significant%20in%20both%20datasets,%20but%20also%20decreased%20less%20than%202x%20the%20initial%20starting%20point-2.png)
-
-``` r
 # Compute periodograms and store frequency, power, and labels
 periodogram_data <- map_dfr(grouped_data, function(group) {
   time <- group$time_point
-  counts <- group$mean_counts
-  
-  res <- lsp(x = counts, times = time,
-             from = 1/100, to = 1,
-             type = "frequency", ofac = 10, plot = FALSE)
-  
-  tibble(
-    frequency = res$scanned,
-    power = res$power,
-    gene_name = unique(group$gene_name),
-    condition = unique(group$condition)
-  )
-})
-
-ggplot(periodogram_data, aes(x = frequency, y = power)) +
-  geom_line() +
-  facet_wrap(~ gene_name + condition, scales = "free_y") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
-  labs(title = "Lomb-Scargle Periodograms", 
-       x = "Frequency (1/hour)", 
-       y = "Normalized Power") +
-  theme_minimal() +
-  theme(strip.text = element_text(size = 10, face = "bold"))
-```
-
-![](CM_Project_files/figure-markdown_strict/Computation%20across%20the%20frequency-1.png)
-
-``` r
-# Compute periodograms and store frequency, power, and labels
-periodogram_data <- map_dfr(grouped_data, function(group) {
-  time <- group$time_point
-  counts <- group$mean_counts
+  counts <- group$mean_tpm
   
   res <- lsp(x = counts, times = time,
              from = 1, to = 96,
-             type = "period", ofac = 10, plot = FALSE)
+             type = "period", ofac = 30, plot = FALSE)
   
   tibble(
     frequency = res$scanned,
@@ -851,10 +798,12 @@ periodogram_data <- map_dfr(grouped_data, function(group) {
   )
 })
 
+
 ggplot(periodogram_data, aes(x = frequency, y = power)) +
   geom_line() +
   facet_wrap(~ gene_name + condition, scales = "free_y") +
   geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
   labs(title = "Lomb-Scargle Periodograms", 
        x = "Period (hour)", 
        y = "Normalized Power") +
@@ -862,4 +811,330 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
-![](CM_Project_files/figure-markdown_strict/Computation%20across%20the%20period-1.png)
+![](CM_Project_files/figure-markdown_strict/Computing%20for%20TPMs-1.png)
+
+``` r
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  labs(title = "Lomb-Scargle Periodograms Zoomed In", 
+       x = "Period (hour)", 
+       y = "Normalized Power") +
+  xlim(0, 12) + 
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+    ## Warning: Removed 210 rows containing missing values or values outside the scale range
+    ## (`geom_line()`).
+
+    ## Warning: Removed 168 rows containing missing values or values outside the scale range
+    ## (`geom_vline()`).
+
+![](CM_Project_files/figure-markdown_strict/Computing%20for%20TPMs-2.png)
+
+``` r
+# Specify the gene name you're interested in
+target_gene <- "GJB2"
+
+# Filter the data for that gene
+filtered_data <- periodogram_data %>%
+  filter(gene_name == target_gene)
+
+# Plot only for that gene using ggplot2
+ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
+  geom_line() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # significance threshold + 
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  scale_x_reverse() +  # Optional: reverse the x-axis so shorter periods are on the right
+  labs(title = paste("Lomb-Scargle Periodogram for", target_gene),
+       x = "Period (hours)",
+       y = "Normalized Power")
+```
+
+![](CM_Project_files/figure-markdown_strict/Case%20gene:%20GJB2%20with%20TPMs-1.png)
+
+``` r
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+    ## List of 1
+    ##  $ strip.text:List of 11
+    ##   ..$ family       : NULL
+    ##   ..$ face         : chr "bold"
+    ##   ..$ colour       : NULL
+    ##   ..$ size         : num 10
+    ##   ..$ hjust        : NULL
+    ##   ..$ vjust        : NULL
+    ##   ..$ angle        : NULL
+    ##   ..$ lineheight   : NULL
+    ##   ..$ margin       : NULL
+    ##   ..$ debug        : NULL
+    ##   ..$ inherit.blank: logi FALSE
+    ##   ..- attr(*, "class")= chr [1:2] "element_text" "element"
+    ##  - attr(*, "class")= chr [1:2] "theme" "gg"
+    ##  - attr(*, "complete")= logi FALSE
+    ##  - attr(*, "validate")= logi TRUE
+
+#### Now using the counts data
+
+``` r
+# Group by gene and condition
+grouped_data <- counts_mean_combined %>%
+  group_by(gene_name, condition) %>%
+  group_split()
+
+# Compute periodograms and store frequency, power, and labels
+periodogram_data <- map_dfr(grouped_data, function(group) {
+  time <- group$time_point
+  counts <- group$mean_counts
+  
+  res <- lsp(x = counts, times = time,
+             from = 1, to = 96,
+             type = "period", ofac = 30, plot = FALSE)
+  
+  tibble(
+    frequency = res$scanned,
+    power = res$power,
+    gene_name = unique(group$gene_name),
+    condition = unique(group$condition)
+  )
+})
+
+
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  labs(title = "Lomb-Scargle Periodograms", 
+       x = "Period (hour)", 
+       y = "Normalized Power") +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+![](CM_Project_files/figure-markdown_strict/Computing%20for%20counts-1.png)
+
+``` r
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  labs(title = "Lomb-Scargle Periodograms Zoomed In", 
+       x = "Period (hour)", 
+       y = "Normalized Power") +
+  xlim(0, 12) + 
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+    ## Warning: Removed 210 rows containing missing values or values outside the scale range
+    ## (`geom_line()`).
+
+    ## Warning: Removed 168 rows containing missing values or values outside the scale range
+    ## (`geom_vline()`).
+
+![](CM_Project_files/figure-markdown_strict/Computing%20for%20counts-2.png)
+
+``` r
+# Specify the gene name you're interested in
+target_gene <- "GJB2"
+
+# Filter the data for that gene
+filtered_data <- periodogram_data %>%
+  filter(gene_name == target_gene)
+
+# Plot only for that gene using ggplot2
+ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
+  geom_line() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # significance threshold + 
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  scale_x_reverse() +  # Optional: reverse the x-axis so shorter periods are on the right
+  labs(title = paste("Lomb-Scargle Periodogram for", target_gene),
+       x = "Period (hours)",
+       y = "Normalized Power")
+```
+
+![](CM_Project_files/figure-markdown_strict/Case%20gene:%20GJB2%20with%20counts-1.png)
+
+``` r
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+    ## List of 1
+    ##  $ strip.text:List of 11
+    ##   ..$ family       : NULL
+    ##   ..$ face         : chr "bold"
+    ##   ..$ colour       : NULL
+    ##   ..$ size         : num 10
+    ##   ..$ hjust        : NULL
+    ##   ..$ vjust        : NULL
+    ##   ..$ angle        : NULL
+    ##   ..$ lineheight   : NULL
+    ##   ..$ margin       : NULL
+    ##   ..$ debug        : NULL
+    ##   ..$ inherit.blank: logi FALSE
+    ##   ..- attr(*, "class")= chr [1:2] "element_text" "element"
+    ##  - attr(*, "class")= chr [1:2] "theme" "gg"
+    ##  - attr(*, "complete")= logi FALSE
+    ##  - attr(*, "validate")= logi TRUE
+
+### Fail
+
+These were lame. Th The results are not good enough to make any
+conclusions about the data. The combination of irregularly spaced and
+too few points gives pretty bad results. The human data has a lot more
+time points than what was shown above. They still aren’t evenly spaced
+so we will still be using the Lomb-Scargle Periodogram. We’ll add these
+time points and see if that helps our results.
+
+#### Adding in all time points from the human data
+
+``` r
+#counts data for mouse
+MS_counts <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/MOUSE/salmon.merged.gene_counts.tsv", header=TRUE, row.names=1)
+#Load counts data for human
+all_human_tp_counts <- read.table("/scratch/Shares/rinnclass/MASTER_CLASS/STUDENTS/genehomies/DATA/HUMAN/salmon.merged.gene_counts.tsv", header=TRUE, row.names=1)
+all_human_tp_counts <- all_human_tp_counts %>%
+  dplyr::select(gene_name, gfp_0_1, gfp_0_2, gfp_0_3, gfp_0.5_1, gfp_0.5_2, gfp_1_1, gfp_1_2,  gfp_1.5_1, gfp_1.5_2, gfp_2_1, gfp_2_2, gfp_2.5_1, gfp_2.5_2, gfp_3_1, gfp_3_2, gfp_3.5_1, gfp_3.5_2, gfp_4_1, gfp_4_2, gfp_4.5_1, gfp_4.5_2, gfp_5_1, gfp_5_2, gfp_5.5_1, gfp_5.5_2, gfp_12_1, gfp_12_2, gfp_12_3, gfp_24_1, gfp_24_2, gfp_24_3, gfp_48_1, gfp_48_2, gfp_48_3, gfp_96_1, gfp_96_2, gfp_96_3)
+
+# Filter the counts data for genes in MS/human_combined_sig
+MS_counts_filtered <- MS_counts[MS_counts$gene_name %in% MS_combined_sig$gene_name, ]
+all_human_tp_counts_filtered <- all_human_tp_counts[human_counts$gene_name %in% human_combined_sig$gene_name, ]
+
+# Reshape mouse counts data to long format
+MS_counts_filtered_long <- MS_counts_filtered %>%
+  pivot_longer(
+    cols = starts_with("WT"),
+    names_to = c("time_point", "replicate"),
+    names_pattern = "^WT_([0-9.]+)_([0-9]+)$",
+    values_to = "counts"
+  ) %>%
+  mutate(
+    time_point = as.numeric(time_point),
+    replicate = as.numeric(replicate),
+    condition = "mouse"  # Add a column to label as mouse
+  )
+
+# Reshape human counts data to long format
+ahtp_counts_filtered_long <- all_human_tp_counts_filtered %>%
+  pivot_longer(
+    cols = starts_with("gfp"),
+    names_to = c("time_point", "replicate"),
+    names_pattern = "^gfp_([0-9.]+)_([0-9]+)$",
+    values_to = "counts"
+  ) %>%
+  mutate(
+    time_point = as.numeric(time_point),
+    replicate = as.numeric(replicate),
+    condition = "human"  # Add a column to label as human
+  )
+
+# Combine LINC00667 and GFP data into one data frame
+counts_combined_long <- bind_rows(human_counts_filtered_long, ahtp_counts_filtered_long)
+
+# Calculate mean and standard error (SE) for counts at each time point and condition
+counts_mean_combined <- counts_combined_long %>%
+  group_by(gene_name, time_point, condition) %>%
+  summarise(
+    mean_counts = mean(counts, na.rm = TRUE),
+    se_counts = sd(counts, na.rm = TRUE) / sqrt(n()),  # Standard error
+    .groups = 'drop'
+  )
+
+# Plot the combined counts values for LINC00667 and GFP with error bars
+ggplot(counts_mean_combined, aes(x = time_point, y = mean_counts, group = interaction(gene_name, condition))) +
+  geom_line(aes(color = condition), alpha = 0.7) +  # Line colored by condition
+  geom_point(aes(color = condition), alpha = 0.5) +  # Points for each mean counts value
+  geom_errorbar(
+    aes(ymin = mean_counts - se_counts, ymax = mean_counts + se_counts, color = condition),
+    width = 0.2, # Adjust the width of the error bars
+    alpha = 0.7
+  ) +
+  facet_wrap(~ gene_name, scales = "free_y") +  # Separate plots for each gene
+  labs(
+    x = "Time Point (h)", 
+    y = "Mean counts", 
+    color = "Condition"
+  ) +
+  theme_minimal() +  # Minimal theme
+  scale_color_manual(values = c("human" = "darkred", "human" = "blue")) +
+  scale_linetype_manual(values = c("human" = "solid", "human" = "dashed")) +# Manual color scale
+  scale_x_continuous(breaks = unique(counts_mean_combined$time_point))  # Set x-axis breaks
+```
+
+    ## Warning: No shared levels found between `names(values)` of the manual scale and the
+    ## data's linetype values.
+
+![](CM_Project_files/figure-markdown_strict/Plotting%20counts%20for%20all%20time%20points%20in%20the%20human%20data-1.png)
+
+``` r
+#### Now using the counts data
+# Group by gene and condition
+grouped_data <- counts_mean_combined %>%
+  group_by(gene_name, condition) %>%
+  group_split()
+
+# Compute periodograms and store frequency, power, and labels
+periodogram_data <- map_dfr(grouped_data, function(group) {
+  time <- group$time_point
+  counts <- group$mean_counts
+  
+  res <- lsp(x = counts, times = time,
+             from = 1, to = 96,
+             type = "period", ofac = 30, plot = FALSE)
+  
+  tibble(
+    frequency = res$scanned,
+    power = res$power,
+    gene_name = unique(group$gene_name),
+    condition = unique(group$condition)
+  )
+})
+
+
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  labs(title = "Lomb-Scargle Periodograms", 
+       x = "Period (hour)", 
+       y = "Normalized Power") +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+![](CM_Project_files/figure-markdown_strict/Plotting%20counts%20for%20all%20time%20points%20in%20the%20human%20data-2.png)
+
+``` r
+ggplot(periodogram_data, aes(x = frequency, y = power)) +
+  geom_line() +
+  facet_wrap(~ gene_name + condition, scales = "free_y") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # Optional: significance line
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  labs(title = "Lomb-Scargle Periodograms Zoomed In", 
+       x = "Period (hour)", 
+       y = "Normalized Power") +
+  xlim(0, 12) + 
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+    ## Warning: Removed 210 rows containing missing values or values outside the scale range
+    ## (`geom_line()`).
+
+    ## Warning: Removed 84 rows containing missing values or values outside the scale range
+    ## (`geom_vline()`).
+
+![](CM_Project_files/figure-markdown_strict/Plotting%20counts%20for%20all%20time%20points%20in%20the%20human%20data-3.png)
+
+### Results
+
+The data results look a lot better with the extra data points. The noise
+at lower frequencies has significantly decreased and peaks later on are
+more prominant
