@@ -9,6 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=24, fig.height=12, fig.align = "center") 
 library(GenomicRanges)
 library(IRanges)
 library(dplyr)
@@ -906,6 +907,25 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
+```{r Case gene: GJB2 with new time points}
+# Specify the gene name you're interested in
+target_gene <- "GJB2"
+
+# Filter the data for that gene
+filtered_data <- periodogram_data %>%
+  filter(gene_name == target_gene)
+
+# Plot only for that gene using ggplot2
+ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
+  geom_line() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # significance threshold + 
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  scale_x_reverse() +  # Optional: reverse the x-axis so shorter periods are on the right
+  labs(title = paste("Lomb-Scargle Periodogram for", target_gene),
+       x = "Period (hours)",
+       y = "Normalized Power")
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
 
 ### Results
 The data results look a lot better with the extra data points. The noise at lower frequencies has significantly decreased and peaks later on are more prominant

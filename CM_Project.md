@@ -590,7 +590,7 @@ ggplot(tpm_mean_combined, aes(x = time_point, y = mean_tpm)) +
   )
 ```
 
-![](CM_Project_files/figure-markdown_strict/plotting%20tpm-1.png)
+<img src="CM_Project_files/figure-markdown_strict/plotting tpm-1.png" style="display: block; margin: auto;" />
 
 ## Plotting figures
 
@@ -650,7 +650,7 @@ ggplot(combined_data, aes(x = timepoint, y = log2FoldChange, group = interaction
   )
 ```
 
-![](CM_Project_files/figure-markdown_strict/plotting%20log2FC-1.png)
+<img src="CM_Project_files/figure-markdown_strict/plotting log2FC-1.png" style="display: block; margin: auto;" />
 
 ## Plotting counts
 
@@ -730,7 +730,7 @@ ggplot(counts_mean_combined, aes(x = time_point, y = mean_counts, group = intera
     ## Warning: No shared levels found between `names(values)` of the manual scale and the
     ## data's linetype values.
 
-![](CM_Project_files/figure-markdown_strict/plotting%20counts-1.png)
+<img src="CM_Project_files/figure-markdown_strict/plotting counts-1.png" style="display: block; margin: auto;" />
 
 # Time analysis of RNASeq Data
 
@@ -811,7 +811,7 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
-![](CM_Project_files/figure-markdown_strict/Computing%20for%20TPMs-1.png)
+<img src="CM_Project_files/figure-markdown_strict/Computing for TPMs-1.png" style="display: block; margin: auto;" />
 
 ``` r
 ggplot(periodogram_data, aes(x = frequency, y = power)) +
@@ -833,7 +833,7 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
     ## Warning: Removed 168 rows containing missing values or values outside the scale range
     ## (`geom_vline()`).
 
-![](CM_Project_files/figure-markdown_strict/Computing%20for%20TPMs-2.png)
+<img src="CM_Project_files/figure-markdown_strict/Computing for TPMs-2.png" style="display: block; margin: auto;" />
 
 ``` r
 # Specify the gene name you're interested in
@@ -854,7 +854,7 @@ ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
        y = "Normalized Power")
 ```
 
-![](CM_Project_files/figure-markdown_strict/Case%20gene:%20GJB2%20with%20TPMs-1.png)
+<img src="CM_Project_files/figure-markdown_strict/Case gene: GJB2 with TPMs-1.png" style="display: block; margin: auto;" />
 
 ``` r
   theme(strip.text = element_text(size = 10, face = "bold"))
@@ -916,7 +916,7 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
-![](CM_Project_files/figure-markdown_strict/Computing%20for%20counts-1.png)
+<img src="CM_Project_files/figure-markdown_strict/Computing for counts-1.png" style="display: block; margin: auto;" />
 
 ``` r
 ggplot(periodogram_data, aes(x = frequency, y = power)) +
@@ -938,7 +938,7 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
     ## Warning: Removed 168 rows containing missing values or values outside the scale range
     ## (`geom_vline()`).
 
-![](CM_Project_files/figure-markdown_strict/Computing%20for%20counts-2.png)
+<img src="CM_Project_files/figure-markdown_strict/Computing for counts-2.png" style="display: block; margin: auto;" />
 
 ``` r
 # Specify the gene name you're interested in
@@ -959,7 +959,7 @@ ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
        y = "Normalized Power")
 ```
 
-![](CM_Project_files/figure-markdown_strict/Case%20gene:%20GJB2%20with%20counts-1.png)
+<img src="CM_Project_files/figure-markdown_strict/Case gene: GJB2 with counts-1.png" style="display: block; margin: auto;" />
 
 ``` r
   theme(strip.text = element_text(size = 10, face = "bold"))
@@ -1070,7 +1070,7 @@ ggplot(counts_mean_combined, aes(x = time_point, y = mean_counts, group = intera
     ## Warning: No shared levels found between `names(values)` of the manual scale and the
     ## data's linetype values.
 
-![](CM_Project_files/figure-markdown_strict/Plotting%20counts%20for%20all%20time%20points%20in%20the%20human%20data-1.png)
+<img src="CM_Project_files/figure-markdown_strict/Plotting counts for all time points in the human data-1.png" style="display: block; margin: auto;" />
 
 ``` r
 #### Now using the counts data
@@ -1109,7 +1109,7 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
   theme(strip.text = element_text(size = 10, face = "bold"))
 ```
 
-![](CM_Project_files/figure-markdown_strict/Plotting%20counts%20for%20all%20time%20points%20in%20the%20human%20data-2.png)
+<img src="CM_Project_files/figure-markdown_strict/Plotting counts for all time points in the human data-2.png" style="display: block; margin: auto;" />
 
 ``` r
 ggplot(periodogram_data, aes(x = frequency, y = power)) +
@@ -1131,7 +1131,50 @@ ggplot(periodogram_data, aes(x = frequency, y = power)) +
     ## Warning: Removed 84 rows containing missing values or values outside the scale range
     ## (`geom_vline()`).
 
-![](CM_Project_files/figure-markdown_strict/Plotting%20counts%20for%20all%20time%20points%20in%20the%20human%20data-3.png)
+<img src="CM_Project_files/figure-markdown_strict/Plotting counts for all time points in the human data-3.png" style="display: block; margin: auto;" />
+
+``` r
+# Specify the gene name you're interested in
+target_gene <- "GJB2"
+
+# Filter the data for that gene
+filtered_data <- periodogram_data %>%
+  filter(gene_name == target_gene)
+
+# Plot only for that gene using ggplot2
+ggplot(filtered_data, aes(x = frequency, y = power, scales = "free_y")) +
+  geom_line() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "blue") +  # significance threshold + 
+  geom_vline(xintercept = c(8, 12, 24, 48), color = "red") + 
+  scale_x_reverse() +  # Optional: reverse the x-axis so shorter periods are on the right
+  labs(title = paste("Lomb-Scargle Periodogram for", target_gene),
+       x = "Period (hours)",
+       y = "Normalized Power")
+```
+
+<img src="CM_Project_files/figure-markdown_strict/Case gene: GJB2 with new time points-1.png" style="display: block; margin: auto;" />
+
+``` r
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+    ## List of 1
+    ##  $ strip.text:List of 11
+    ##   ..$ family       : NULL
+    ##   ..$ face         : chr "bold"
+    ##   ..$ colour       : NULL
+    ##   ..$ size         : num 10
+    ##   ..$ hjust        : NULL
+    ##   ..$ vjust        : NULL
+    ##   ..$ angle        : NULL
+    ##   ..$ lineheight   : NULL
+    ##   ..$ margin       : NULL
+    ##   ..$ debug        : NULL
+    ##   ..$ inherit.blank: logi FALSE
+    ##   ..- attr(*, "class")= chr [1:2] "element_text" "element"
+    ##  - attr(*, "class")= chr [1:2] "theme" "gg"
+    ##  - attr(*, "complete")= logi FALSE
+    ##  - attr(*, "validate")= logi TRUE
 
 ### Results
 
